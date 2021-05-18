@@ -1,27 +1,25 @@
-import {Transformations, getRectangle, getCircle} from './transformations/transforms.js';
+import {Maze} from './maze/Maze.js';
 
 const c = document.querySelector("#myCanvas");
 const ctx = c.getContext('2d');
-const transforms = new Transformations(c);
+const maze = new Maze(c);
 
 
-window.onload = () => draw();
+window.onload = () => {
+  draw();
+  setInterval(()=>maze.update(), 10);
+};
 
-const rect = getRectangle(100,100,50,50);
-const circle = getCircle(50,50,25,25);
 
 const draw = () => {
+  c.width = c.clientWidth;
+  c.height = c.clientHeight;
+
   requestAnimationFrame(draw);
-  ctx.fillStyle = "blue";
+  ctx.fillStyle = "black";
   ctx.clearRect(0,0,c.width,c.height);
   ctx.fillRect(0,0,c.width,c.height);
 
-  transforms.drawShape(rect,"red",true);
-  transforms.drawShape(circle,"green",false);
-  transforms.drawLine(rect,'black');
+  maze.draw();
 
-  transforms.translateShape(rect,.1,.1);
-
-  const centerRect = transforms.getShapeCenter(rect);
-  transforms.rotateShape(rect,Math.PI*2/30,centerRect);
 }

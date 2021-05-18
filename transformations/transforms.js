@@ -117,6 +117,13 @@ export class Transformations{
     }
   }
 
+  createLine(x1,y1,x2,y2){
+    return [
+      {x: x1,y: y1},
+      {x: x2,y: y2}
+    ]
+  }
+
   drawLine(shape,color,width){
     this.ctx.lineWidth = width? width : 1;
     this.ctx.strokeStyle = color;

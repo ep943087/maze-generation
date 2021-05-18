@@ -5,10 +5,22 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>2d Matrix Transfomrations</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <h1>2d Matrix Transformations</h1>
-  <canvas id="myCanvas"></canvas>
+  <div>
+    <h1>Maze Generation</h1>
+    <div class='controls'>
+      <button id="start">Start</button>
+      <button id="stop">Stop</button>
+      <select id="maze-type">
+        <option value="backtracking">Backtracking</option>
+      </select>
+    </div>
+    <div class='canvas-container'>
+      <canvas id="myCanvas"></canvas>
+    </div>
+  </div>
   <script type="module" src="app.js"></script>
 </body>
 </html>
