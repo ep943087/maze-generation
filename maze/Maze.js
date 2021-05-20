@@ -41,7 +41,7 @@ export class Maze{
         this.visited = [];
         this.currCell = null;
         this.finished = true;
-        this.maxVisitedPoints = 100;
+        this.maxVisitedPoints = 10;
         this.initGrid();
         this.initColors();
         this.initEventListeners();
@@ -51,7 +51,17 @@ export class Maze{
         const start = document.querySelector("#start");
         const stop = document.querySelector("#stop");
         start.addEventListener('click',(e)=>{
-            this.initRecursiveBacktracking();
+            this.algo = document.querySelector("#algo").value;
+            switch(this.algo){
+                case "backtracking":
+                    return this.initRecursiveBacktracking();
+                case "prims":
+                    return this.initPrims();
+                case "kruskals":
+                    return this.initKruskals();
+                case "huntkill":
+                    return this.initHuntKill();
+            }
         });
         stop.addEventListener('click',(e)=>{
             this.finished = true;
@@ -88,57 +98,61 @@ export class Maze{
         //this.maxVisitedPoints = this.rows * this.cols * .03;
     }
 
+    inVisited(currCell){
+        return !currCell.borders.every(border=>border);
+    }
+
+    /* RECURSIVE BACKTRACKING ALGO */
     initRecursiveBacktracking(){
         this.finished = false;
         this.initGrid();
         this.stack = [this.currCell];
     }
 
-    inVisited(currCell){
-        return !currCell.borders.every(border=>border===true);
-    }
-
-    getValidBorders(cell){
+    BtGetValidBorders(cell, huntkill = false){
         const {i,j} = cell;
         const borders = [];
-        if(i > 0 && !this.inVisited(this.grid[i-1][j])){
+        if(huntkill){
+            huntkill = !this.inVisited(cell);
+        }
+        if(i > 0 && (!this.inVisited(this.grid[i-1][j]) || huntkill)){
             borders.push(UP);
         }
-        if(i < this.rows - 1 && !this.inVisited(this.grid[i+1][j])){
+        if(i < this.rows - 1 && (!this.inVisited(this.grid[i+1][j]) || huntkill)){
             borders.push(DOWN);
         }
-        if(j > 0 && !this.inVisited(this.grid[i][j-1])){
+        if(j > 0 && (!this.inVisited(this.grid[i][j-1]) || huntkill)){
             borders.push(LEFT);
         }
-        if(j < this.cols - 1 && !this.inVisited(this.grid[i][j+1])){
+        if(j < this.cols - 1 && (!this.inVisited(this.grid[i][j+1]) || huntkill)){
             borders.push(RIGHT);
         }
         return borders;
     }
 
-    getNextCell(){
-        const borders = this.getValidBorders(this.currCell);        
+    BtGetNextCell(cell, huntkill = false){
+        const borders = this.BtGetValidBorders(cell, huntkill);        
         if(borders.length === 0){
             return null;
         }
         const dir = borders[Math.floor(borders.length*Math.random())];
         let nextCell;
-        const {i,j} = this.currCell;
+        const {i,j} = cell;
         if(dir === UP){
             nextCell = this.grid[i-1][j];
-            this.currCell.borders[UP] = false;
+            cell.borders[UP] = false;
             nextCell.borders[DOWN] = false;            
         } else if(dir === DOWN){
             nextCell = this.grid[i+1][j];
-            this.currCell.borders[DOWN] = false;
+            cell.borders[DOWN] = false;
             nextCell.borders[UP] = false;
         } else if(dir === LEFT){
             nextCell = this.grid[i][j-1];
-            this.currCell.borders[LEFT] = false;
+            cell.borders[LEFT] = false;
             nextCell.borders[RIGHT] = false;
         } else{
             nextCell = this.grid[i][j+1];
-            this.currCell.borders[RIGHT] = false;
+            cell.borders[RIGHT] = false;
             nextCell.borders[LEFT] = false;
         }
         this.stack.push(nextCell);
@@ -149,19 +163,204 @@ export class Maze{
         if(this.stack.length === 0)
             return this.finished = true;
         this.currCell.visitedPoints = this.maxVisitedPoints;
-        this.currCell = this.getNextCell();
+        this.currCell = this.BtGetNextCell(this.currCell);
         if(this.currCell === null){
             this.stack.pop();
             if(this.stack.length > 0)
                 this.currCell = this.stack[this.stack.length-1];
-            return;
         }
     }
 
+    /* RANDOMIZED PRIM'S ALGO */
+
+    PrGetAdjacentCells = (i,j) => {
+        const cell = this.grid[i][j];
+        if(!this.inVisited(cell) && cell !== this.currCell) return;
+        const nonVisited = [];
+        cell.neighbors.forEach(adj=>{
+            if(!this.inVisited(adj)){
+                nonVisited.push({cell: adj, prev: cell});
+            }
+        });
+        this.adjacentCells = [...this.adjacentCells, ...nonVisited];
+    }
+
+    PrGetVisitedCells(){
+        this.adjacentCells = [];
+        this.loopGrid(this.PrGetAdjacentCells);
+    }
+
+    findDirection(cell,prev){
+        if(cell.i > prev.i){
+            return [DOWN, UP];
+        } else if(cell.i < prev.i){
+            return [UP, DOWN];
+        } else if(cell.j > prev.j){
+            return [RIGHT, LEFT];
+        } else if(cell.j < prev.j){
+            return [LEFT, RIGHT];
+        }
+    }
+
+    initPrims(){
+        this.initGrid();
+        this.adjacentCells = [];
+        this.PrGetAdjacentCells(this.currCell.i,this.currCell.j);
+        const adjacent = this.adjacentCells;
+        if(adjacent.length === 0) return;
+        const {cell, prev} = adjacent[Math.floor(Math.random()*adjacent.length)];
+        const [dir1, dir2] = this.findDirection(cell, prev);
+
+        this.currCell = cell;
+        this.currCell.visitedPoints = this.maxVisitedPoints;
+
+        cell.borders[dir2] = false;
+        prev.borders[dir1] = false;
+        this.finished = false;
+    }
+
+    updatePrims(){
+        this.PrGetVisitedCells();
+        const adjacent = this.adjacentCells;
+        if(adjacent.length === 0) return this.finished = true;
+        const {cell, prev} = adjacent[Math.floor(Math.random()*adjacent.length)];
+        const [dir1, dir2] = this.findDirection(cell, prev);
+
+        this.currCell = cell;
+        this.currCell.visitedPoints = this.maxVisitedPoints;
+
+        cell.borders[dir2] = false;
+        prev.borders[dir1] = false;
+    }
+
+    /* RANDOMIZE KRUSKAL'S ALGO */
+
+    KrAddPossibleNextCell = (i,j) => {
+        const cell = this.grid[i][j];
+        if(!this.canVisit(cell)) return;
+        const neighbors = [];
+        cell.neighbors.forEach(adj=>{
+            if(!this.inVisited(adj)){
+                neighbors.push({cell: adj, prev: cell});
+            }
+        });
+        this.adjacentCells = [...this.adjacentCells, ...neighbors];
+    }
+
+    vertexExists(cell1, cell2){
+        return this.vertices.some(vertex=>{
+            const {cell, prev} = vertex;
+            if((cell === cell1 && prev === cell2) ||
+               (cell === cell2 && prev === cell1)){
+                   return true;
+            }
+            return false;
+        })
+    }
+
+    addVertex = (i,j) => {
+        const cell = this.grid[i][j];
+        cell.neighbors.forEach(adj=>{
+            if(!this.vertexExists(cell, adj)){
+                this.vertices.push({
+                    cell,
+                    prev: adj,
+                });
+            }
+        })
+    }
+
+    initKruskals(){
+        this.initGrid();
+        this.vertices = [];
+        this.loopGrid(this.addVertex);
+        console.log(this.vertices);
+        this.finished = false;
+    }
+
+    countAdjacentCells(cell){
+        let borders = cell.borders.reduce((total, border)=>{
+            return border? total + 1 : total;
+        },0);
+
+        if(cell.neighbors.length >= 3){
+
+        }
+    }
+
+
+    updateKruskals(){
+        this.adjacentCells = [];
+
+        if(this.vertices.length === 0) return this.finished = true;
+        const r = Math.floor(Math.random()*this.vertices.length);
+        const {cell, prev} = this.vertices[r];
+        this.vertices.splice(r, 1);
+        const [dir1, dir2] = this.findDirection(cell, prev);
+
+        this.currCell = cell;
+        this.currCell.visitedPoints = this.maxVisitedPoints;
+        prev.visitedPoints = this.maxVisitedPoints;
+
+        cell.borders[dir2] = false;
+        prev.borders[dir1] = false;
+
+    }
+
+    /* HUNT-AND-KILL */
+
+    initHuntKill(){
+        this.finished = false;
+        this.initGrid();
+        this.i = null;
+        this.stack = [];
+    }
+
+    visitedNeighbors(cell){
+        return cell.neighbors.some(neighbor=>{
+            return this.inVisited(neighbor);
+        })
+    }
+
+    updateHuntKill(){
+        if(this.i === this.grid.length) return this.finished = true;
+
+        if(this.currCell !== null){
+            this.currCell = this.BtGetNextCell(this.currCell, true);
+        }
+        if(this.currCell === null){
+            if(this.i === null)
+                this.i = 0;
+            let found = false;
+            for(let j=0;j<this.grid[0].length;j++){
+                const cell = this.grid[j][this.i];
+                if(!found && !this.inVisited(cell)){
+                    found = true;
+                    this.currCell = cell;
+                }
+                cell.visitedPoints = this.maxVisitedPoints;
+            }
+            this.i++;
+            if(found)
+                this.i = null;
+        }
+
+    }
+
+    /* UPDATE FUNCTION */
     update(){
         if(this.finished) return;
         
-        this.updateRecursiveBacktracking();
+        switch(this.algo){
+            case "backtracking":
+                return this.updateRecursiveBacktracking();
+            case "prims":
+                return this.updatePrims();
+            case "kruskals":
+                return this.updateKruskals();
+            case "huntkill":
+                return this.updateHuntKill();
+        }
     }
 
     getXY(i,j){

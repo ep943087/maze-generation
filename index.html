@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>2d Matrix Transfomrations</title>
+  <title>Maze Generation</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -13,8 +13,11 @@
     <div class='controls'>
       <button id="start">Start</button>
       <button id="stop">Stop</button>
-      <select id="maze-type">
+      <select id="algo">
         <option value="backtracking">Backtracking</option>
+        <option value="prims">Prim's Algorithm</option>
+        <option value="kruskals">Kruskal's Algorithm</option>
+        <option value="huntkill">Hunt-and-Kill</option>
       </select>
     </div>
     <div class='canvas-container'>
